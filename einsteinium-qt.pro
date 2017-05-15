@@ -8,19 +8,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
-CONFIG += c++11
-
-OPENSSL_INCLUDE_PATH=/usr/local/opt/openssl/include
-OPENSSL_LIB_PATH=/usr/local/opt/openssl/lib
-BDB_INCLUDE_PATH=/usr/local/opt/berkeley-db@4/include
-BDB_LIB_PATH=/usr/local/opt/berkeley-db@4/lib
-BOOST_INCLUDE_PATH=/usr/local/opt/boost/include
-BOOST_LIB_PATH=/usr/local/opt/boost/lib
-#BOOST_LIB_SUFFIX=-mgw49-mt-s-1_55
-MINIUPNPC_INCLUDE_PATH=/usr/local/opt/miniupnpc/include
-MINIUPNPC_LIB_PATH=/usr/local/opt/miniupnpc/lib
-QRENCODE_INCLUDE_PATH=/usr/local/include
-QRENCODE_LIB_PATH=/usr/local/lib
 
 # for boost 1.37, add -mt to the boost libraries
 # use: qmake BOOST_LIB_SUFFIX=-mt
@@ -31,6 +18,10 @@ QRENCODE_LIB_PATH=/usr/local/lib
 # Dependency library locations can be customized with:
 #    BOOST_INCLUDE_PATH, BOOST_LIB_PATH, BDB_INCLUDE_PATH,
 #    BDB_LIB_PATH, OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH respectively
+#    Default folder for Win32: C:/deps/
+#    Change if necessary
+
+DEPS_PATH = C:/deps
 
 OBJECTS_DIR = build
 MOC_DIR = build
@@ -68,8 +59,18 @@ win32:QMAKE_LFLAGS *= -static-libgcc -static-libstdc++
 # libqrencode (http://fukuchi.org/works/qrencode/index.en.html) must be installed for support
 contains(USE_QRCODE, 1) {
     message(Building with QRCode support)
+    isEmpty(QRENCODE_INCLUDE_PATH) {
+        win32:QRENCODE_INCLUDE_PATH=$$DEPS_PATH/qrencode-3.4.4
+        macx:QRENCODE_INCLUDE_PATH=/usr/local/include
+        }
+    isEmpty(QRENCODE_LIB_PATH) {
+        win32:QRENCODE_LIB_PATH=$$DEPS_PATH/qrencode-3.4.4/.libs
+        macx:QRENCODE_LIB_PATH=/usr/local/lib
+        }
     DEFINES += USE_QRCODE
     LIBS += -lqrencode
+    INCLUDEPATH += $$QRENCODE_INCLUDE_PATH
+    LIBS += $$join(QRENCODE_LIB_PATH,,-L,)
 }
 
 # use: qmake "USE_UPNP=1" ( enabled by default; default)
@@ -78,11 +79,21 @@ contains(USE_QRCODE, 1) {
 # miniupnpc (http://miniupnp.free.fr/files/) must be installed for support
 contains(USE_UPNP, -) {
     message(Building without UPNP support)
-} else {
+}
+else {
     message(Building with UPNP support)
     count(USE_UPNP, 0) {
         USE_UPNP=1
     }
+    isEmpty(MINIUPNPC_INCLUDE_PATH) {
+        win32:MINIUPNPC_INCLUDE_PATH=$$DEPS_PATH
+        macx:MINIUPNPC_INCLUDE_PATH=/usr/local/opt/miniupnpc/include
+        }
+    isEmpty(MINIUPNPC_LIB_PATH) {
+        win32:MINIUPNPC_LIB_PATH=$$DEPS_PATH/miniupnpc
+        macx:MINIUPNPC_LIB_PATH=/usr/local/opt/miniupnpc/lib
+        }
+}
     DEFINES += USE_UPNP=$$USE_UPNP MINIUPNP_STATICLIB
     INCLUDEPATH += $$MINIUPNPC_INCLUDE_PATH
     LIBS += $$join(MINIUPNPC_LIB_PATH,,-L,) -lminiupnpc
@@ -381,7 +392,7 @@ OTHER_FILES += README.md \
 # platform specific defaults, if not overridden on command line
 isEmpty(BOOST_LIB_SUFFIX) {
     macx:BOOST_LIB_SUFFIX = -mt
-    win32:BOOST_LIB_SUFFIX = -mgw44-mt-s-1_50
+    win32:BOOST_LIB_SUFFIX = -mgw53-mt-d-1_63
 }
 
 isEmpty(BOOST_THREAD_LIB_SUFFIX) {
@@ -389,7 +400,8 @@ isEmpty(BOOST_THREAD_LIB_SUFFIX) {
 }
 
 isEmpty(BDB_LIB_PATH) {
-    macx:BDB_LIB_PATH = /usr/local/opt/berkeley-db4/lib
+    win32:BDB_LIB_PATH=$$DEPS_PATH/db-4.8.30.NC/build_unix
+    macx:BDB_LIB_PATH = /usr/local/opt/berkeley-db@4/lib
 }
 
 isEmpty(BDB_LIB_SUFFIX) {
@@ -397,22 +409,27 @@ isEmpty(BDB_LIB_SUFFIX) {
 }
 
 isEmpty(BDB_INCLUDE_PATH) {
-    macx:BDB_INCLUDE_PATH = /usr/local/opt/berkeley-db4/include
+    win32:BDB_INCLUDE_PATH=$$DEPS_PATH/db-4.8.30.NC/build_unix
+    macx:BDB_INCLUDE_PATH = /usr/local/opt/berkeley-db@4/include
 }
 
 isEmpty(BOOST_LIB_PATH) {
+    win32:BOOST_LIB_PATH=$$DEPS_PATH/boost_1_63_0/stage/lib
     macx:BOOST_LIB_PATH = /usr/local/opt/boost/lib
 }
 
 isEmpty(BOOST_INCLUDE_PATH) {
+    win32:BOOST_INCLUDE_PATH=$$DEPS_PATH/boost_1_63_0
     macx:BOOST_INCLUDE_PATH = /usr/local/opt/boost/include
 }
 
 isEmpty(OPENSSL_LIB_PATH) {
+    win32:OPENSSL_LIB_PATH=$$DEPS_PATH/openssl-1.0.2k
     macx:OPENSSL_LIB_PATH = /usr/local/opt/openssl/lib
 }
 
-isEmpty(OPENSSL_INCLUDE_PATH) {
+isEmpty(OPENSSL_INCLUDE_PATH) {    
+    win32:OPENSSL_INCLUDE_PATH=$$DEPS_PATH/openssl-1.0.2k/include
     macx:OPENSSL_INCLUDE_PATH = /usr/local/opt/openssl/include
 }
 
@@ -448,8 +465,8 @@ macx:QMAKE_CXXFLAGS_THREAD += -pthread
 macx:QMAKE_INFO_PLIST = share/qt/Info.plist
 
 # Set libraries and includes at end, to use platform-defined defaults if not overridden
-INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH $$QRENCODE_INCLUDE_PATH
-LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,) $$join(QRENCODE_LIB_PATH,,-L,)
+INCLUDEPATH += $$BOOST_INCLUDE_PATH $$BDB_INCLUDE_PATH $$OPENSSL_INCLUDE_PATH
+LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB_PATH,,-L,)
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
 win32:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
